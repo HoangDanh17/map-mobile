@@ -5,15 +5,6 @@ const RootLayout = () => {
   return (
     <Tabs>
       <Tabs.Screen
-        name="map"
-        options={{
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="home" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="home"
         options={{
           headerShown: false,
@@ -22,6 +13,16 @@ const RootLayout = () => {
           ),
         }}
       />
+      <Tabs.Screen
+        name="map"
+        options={{
+          headerShown: false,
+          tabBarIcon: ({ color, size }) => (
+            <MaterialIcons name="home" color={color} size={size} />
+          ),
+        }}
+      />
+
       <Tabs.Screen
         name="schedule"
         options={{

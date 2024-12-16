@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
-import { Text, View, Button, Platform } from "react-native";
+import { Text, View, Button, Platform, Image, Linking } from "react-native";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import { Redirect, useRouter } from "expo-router";
+import LogoImage from "../../assets/images/logo-app.jpg";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,11 +21,11 @@ function handleRegistrationError(errorMessage: string) {
 
 async function registerForPushNotificationsAsync() {
   if (Platform.OS === "android") {
-    Notifications.setNotificationChannelAsync("default", {
-      name: "default",
-      importance: Notifications.AndroidImportance.MAX,
+    Notifications.setNotificationChannelAsync("curanest_channel", {
+      name: "CuraNest Notifications",
+      importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
-      lightColor: "#FF231F7C",
+      lightColor: "#4A90E2",
     });
   }
 
@@ -37,12 +39,12 @@ async function registerForPushNotificationsAsync() {
     }
     if (finalStatus !== "granted") {
       handleRegistrationError(
-        "Permission not granted to get push token for push notification!"
+        "Permission not granted to get push token for CuraNest notifications!"
       );
       return;
     }
     const projectId =
-      Constants?.expoConfig?.extra?.eas?.projectId ?? 
+      Constants?.expoConfig?.extra?.eas?.projectId ??
       Constants?.easConfig?.projectId;
     if (!projectId) {
       handleRegistrationError("Project ID not found");
@@ -63,14 +65,24 @@ async function registerForPushNotificationsAsync() {
   }
 }
 
-// Helper function to send notifications
 async function sendPushNotification(expoPushToken: string) {
   const message = {
     to: expoPushToken,
     sound: "default",
-    title: "Hello!",
-    body: "This is a test notification",
-    data: { customData: "Custom data goes here" },
+    title: "CuraNest",
+    body: "You have a new notification",
+    data: {
+      screen: "schedule",
+      title: "CuraNest notification",
+    },
+    android: {
+      channelId: "curanest_channel",
+      largeIcon: LogoImage,
+      smallIcon: LogoImage,
+    },
+    iOS: {
+      badge: 1,
+    },
   };
 
   await fetch("https://exp.host/--/api/v2/push/send", {
@@ -85,6 +97,7 @@ async function sendPushNotification(expoPushToken: string) {
 
 export default function App() {
   const [expoPushToken, setExpoPushToken] = useState("");
+  const router = useRouter();
   const [notification, setNotification] = useState<
     Notifications.Notification | undefined
   >(undefined);
@@ -100,10 +113,14 @@ export default function App() {
       Notifications.addNotificationReceivedListener((notification) => {
         setNotification(notification);
       });
-
     responseListener.current =
       Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
+        const screen = response.notification.request.content.data.screen;
+        if (screen) {
+          setTimeout(() => {
+            router.push(screen);
+          }, 100);
+        }
       });
 
     return () => {
@@ -120,7 +137,7 @@ export default function App() {
     <View
       style={{ flex: 1, alignItems: "center", justifyContent: "space-around" }}
     >
-      <Text>Your Expo push token: {expoPushToken}</Text>
+      <Text>CuraNest Push Token: {expoPushToken}</Text>
       <View style={{ alignItems: "center", justifyContent: "center" }}>
         <Text>
           Title: {notification && notification.request.content.title}{" "}
@@ -132,7 +149,7 @@ export default function App() {
         </Text>
       </View>
       <Button
-        title="Press to Send Notification"
+        title="Send CuraNest Notification"
         onPress={async () => {
           if (expoPushToken) {
             await sendPushNotification(expoPushToken);
@@ -140,6 +157,12 @@ export default function App() {
             alert("Push token not available");
           }
         }}
+      />
+      {/* Optional: Display the logo */}
+      <Image
+        source={LogoImage}
+        style={{ width: 100, height: 100, marginTop: 20 }}
+        resizeMode="contain"
       />
     </View>
   );
